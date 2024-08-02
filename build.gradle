@@ -1,0 +1,52 @@
+
+
+
+plugins {
+    //OTHER PLUGINS
+    id 'java'
+    id 'org.hidetake.swagger.generator' version '2.19.2'
+}
+
+repositories {
+    mavenCentral()
+
+}
+
+
+dependencies {
+    //OTHER DEPENDENCIES
+
+    //If we want hateoas. we also set heteoas to true in config.json
+// https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-hateoas
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-hateoas', version: '3.3.2'
+
+    //open api code generation
+    swaggerCodegen 'org.openapitools:openapi-generator-cli:7.3.0'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
+
+// https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
+    implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.1.0'
+
+}
+
+processResources {
+    dependsOn(generateSwaggerCode)}
+
+swaggerSources {
+    order {
+        inputFile = file("${rootDir}/src/main/resources/order.yaml")
+        code {
+            language = 'spring'
+            configFile = file("${rootDir}/src/main/resources/config.json")
+
+            //what to generate. Optional.
+            components = [models: true, apis: true, supportingFiles: 'ApiUtil.java']
+            dependsOn validation //first validate the yaml
+        }
+    }
+}
+
+//Set generated code to sourceSet to be able to used it in the implementation
+compileJava.dependsOn swaggerSources.order.code
+sourceSets.main.java.srcDir "${swaggerSources.order.code.outputDir}/src/main/java"
+sourceSets.main.resources.srcDir "${swaggerSources.order.code.outputDir}/src/main/resources"
